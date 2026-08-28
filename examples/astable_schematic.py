@@ -11,8 +11,9 @@ from plattfig import Schematic
 
 sc = Schematic(74, 44)
 
-pins = sc.dip(23.9, 16, "555")
-p8, p7, p6, p5 = pins["8"], pins["7"], pins["6"], pins["5"]
+# pin 5 (CONTROL) is unused in this circuit: no stub, so nothing dangles
+pins = sc.dip(23.9, 16, "555", nc=("5",))
+p8, p7, p6 = pins["8"], pins["7"], pins["6"]
 p1, p2, p3, p4 = pins["1"], pins["2"], pins["3"], pins["4"]
 
 # positive rail: supply -> along the top, down the right side to RESET
@@ -33,6 +34,7 @@ sc.dot(35, 13)
 # trigger tied to threshold, around the right of the chip, down to the cap
 sc.wire([(35, 13), (43.2, 13), (43.2, 31), (30, 31), p2])
 sc.dot(30, 31)
+sc.wire([(30, 31), (30, 33)])                # down to the cap's top plate
 sc.cap(30, 34, orient="v", polar=True)       # 10 uF, plus side up
 sc.wire([(30, 35), (30, 38)])
 
@@ -44,7 +46,7 @@ sc.resistor(35, 31.8, orient="v", length=5)  # 330
 sc.wire([(35, 36.8), (35, 38)])
 
 # ground rail
-sc.wire([(20, 38), (41, 38)], role="neg")
+sc.wire([(20, 38), (35, 38)], role="neg")   # rail ends at the R3 junction
 sc.wire([p1, (25, 38)], role="neg")
 sc.wire([(20, 38), (20, 41)], role="neg")
 sc.ground(20, 41)

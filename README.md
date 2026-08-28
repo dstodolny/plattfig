@@ -69,7 +69,8 @@ The conventions that make the figures read like the book:
   pale, so incremental figures highlight what changed.
 
 The `Schematic` renderer works on a 10px grid with the same palette:
-`sc.dip()` returns pin coordinates to wire against, `sc.wire(points,
+`sc.dip()` returns pin coordinates to wire against (`nc=` names unused
+pins, drawn without a stub), `sc.wire(points,
 role)` with `'pos'`/`'neg'`/`'sig'` roles, `sc.dot()` junctions,
 resistors, caps, LED, ground, supply, pills, and a components table.
 See [examples/astable_schematic.py](examples/astable_schematic.py).

@@ -63,7 +63,7 @@ bottom pins 1-2-3-4 row `f`. Rail holes skip every 6th column
 ```python
 from plattfig import Schematic
 sc = Schematic(74, 44)                      # canvas in 10px grid units
-pins = sc.dip(23.9, 16, "555")              # returns {pin: (x, y)} stub tips
+pins = sc.dip(23.9, 16, "555", nc=("5",))   # {pin: (x, y)} stub tips; nc pins get no stub
 sc.wire([(8, 5), (46, 5), pins["4"]], role="pos")   # 'pos' red, 'neg' blue, 'sig' ink
 sc.dot(25, 5, "pos")                        # junction; crossings w/o dot = not connected
 sc.resistor(30, 5, orient="v", length=6)

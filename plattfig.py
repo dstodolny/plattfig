@@ -535,17 +535,26 @@ class Schematic(_Canvas):
 
     def led(self, x, y, orient="v", role="sig"):
         """Diode-with-arrows symbol centered on (x, y), pointing down/right."""
+        import math
         px, py = self._xy(x, y)
         c = self.ROLE[role]
         s = ['<g transform="translate(%g,%g)%s">'
              % (px, py, ' rotate(-90)' if orient == "h" else "")]
         s.append('<polygon points="-8,-7 8,-7 0,6" fill="%s"/>' % c)
         s.append('<line x1="-8" y1="6" x2="8" y2="6" stroke="%s" stroke-width="2.6"/>' % c)
+        # Emission arrows: 45-degree shafts with heads computed on the same
+        # axis, so the points line up with the shafts.
+        u = 1 / math.sqrt(2)
         for dx in (10, 15):
-            s.append('<line x1="%g" y1="-3" x2="%g" y2="3" stroke="%s" '
-                     'stroke-width="1.8"/>' % (dx, dx + 6, c))
-            s.append('<polygon points="%g,3 %g,-1.4 %g,3.4" fill="%s"/>'
-                     % (dx + 8, dx + 4.4, dx + 3.2, c))
+            x0, y0 = dx, -3.4
+            tip = (x0 + 11 * u, y0 + 11 * u)
+            base = (x0 + 6.5 * u, y0 + 6.5 * u)
+            s.append('<line x1="%g" y1="%g" x2="%g" y2="%g" stroke="%s" '
+                     'stroke-width="1.8"/>' % (x0, y0, base[0], base[1], c))
+            s.append('<polygon points="%g,%g %g,%g %g,%g" fill="%s"/>'
+                     % (round(tip[0], 2), round(tip[1], 2),
+                        round(base[0] - 2.3 * u, 2), round(base[1] + 2.3 * u, 2),
+                        round(base[0] + 2.3 * u, 2), round(base[1] - 2.3 * u, 2), c))
         s.append('</g>')
         self._emit("".join(s))
 
@@ -568,9 +577,11 @@ class Schematic(_Canvas):
             _Canvas.text(self, label, px, py + 26, size=12, bold=True)
 
     def dip(self, x, y, label, pins_top=("8", "7", "6", "5"),
-            pins_bot=("1", "2", "3", "4"), pin_pitch=5, h=8):
+            pins_bot=("1", "2", "3", "4"), pin_pitch=5, h=8, nc=()):
         """Physical DIP outline, notch left. Returns {pin: (gx, gy)} of pin
-        stub tips in grid units (top pins point up, bottom pins down)."""
+        stub tips in grid units (top pins point up, bottom pins down).
+        Pins named in `nc` are unconnected: numbered in the package but
+        drawn without a stub, and left out of the returned dict."""
         px, py = self._xy(x, y)
         n = len(pins_top)
         w = (n - 1) * pin_pitch * self.G + 2.2 * self.G
@@ -583,10 +594,12 @@ class Schematic(_Canvas):
         pins = {}
         for i, (pt, pb) in enumerate(zip(pins_top, pins_bot)):
             cx = px + 1.1 * self.G + i * pin_pitch * self.G
-            s.append('<line x1="%g" y1="%g" x2="%g" y2="%g" stroke="%s" '
-                     'stroke-width="2.2"/>' % (cx, py, cx, py - self.G, INK))
-            s.append('<line x1="%g" y1="%g" x2="%g" y2="%g" stroke="%s" '
-                     'stroke-width="2.2"/>' % (cx, py + H, cx, py + H + self.G, INK))
+            if str(pt) not in nc:
+                s.append('<line x1="%g" y1="%g" x2="%g" y2="%g" stroke="%s" '
+                         'stroke-width="2.2"/>' % (cx, py, cx, py - self.G, INK))
+            if str(pb) not in nc:
+                s.append('<line x1="%g" y1="%g" x2="%g" y2="%g" stroke="%s" '
+                         'stroke-width="2.2"/>' % (cx, py + H, cx, py + H + self.G, INK))
             s.append('<text x="%g" y="%g" font-family="%s" font-size="12" '
                      'fill="#ffffff" text-anchor="middle" font-weight="bold">%s</text>'
                      % (cx, py + 16, FONT, _esc(pt)))
@@ -594,8 +607,10 @@ class Schematic(_Canvas):
                      'fill="#ffffff" text-anchor="middle" font-weight="bold">%s</text>'
                      % (cx, py + H - 7, FONT, _esc(pb)))
             gx = cx / self.G
-            pins[str(pt)] = (gx, y - 1)
-            pins[str(pb)] = (gx, y + h + 1)
+            if str(pt) not in nc:
+                pins[str(pt)] = (gx, y - 1)
+            if str(pb) not in nc:
+                pins[str(pb)] = (gx, y + h + 1)
         s.append('<text x="%g" y="%g" font-family="%s" font-size="14" fill="#ffffff" '
                  'text-anchor="middle" letter-spacing="2">%s</text>'
                  % (px + w / 2, py + H / 2 + 5, FONT, _esc(label)))

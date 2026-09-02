@@ -34,14 +34,15 @@ Copy `plattfig.py` next to your figure scripts (it is the whole
 library; Python 3.8+, standard library only). One script per figure:
 
 ```python
-from plattfig import Breadboard, WIRE_RED, WIRE_BLUE, WIRE_GREEN
+from plattfig import Breadboard, WIRE_RED, WIRE_BLUE, WIRE_GREEN, WIRE_YELLOW, WIRE_MAGENTA
 
 bb = Breadboard(cols=30)            # half-size board; cols=63 for full
 bb.ic(13, "555")                    # DIP straddles the trench, notch left
 bb.jumper((13, "a"), ("T+", 13), color=WIRE_RED)
 bb.resistor(("T+", 14), (14, "a"), "10k")   # color bands computed from the value
-bb.electrolytic((14, "i"), ("B-", 14))      # polarity stripe faces the neg lead
-bb.led((15, "h"), (18, "h"))
+bb.electrolytic((14, "i"), ("B-", 14))      # stripe faces the neg lead, "+" beside the pos lead
+bb.led((15, "h"), (18, "h"))                # anode first; a "+" marks it
+bb.probe((15, "j"), "CH1", color=WIRE_YELLOW)   # hook and pill in the scope's channel colour
 bb.supply(("T+", 2), "+", label="+5 V", side="left")
 bb.save("my-figure.svg")
 ```
@@ -64,7 +65,10 @@ The conventions that make the figures read like the book:
 - **Stripped tips** — every wire end shows a bare white tip entering
   its hole; component leads are white with dark outlines.
 - **Pill callouts** — `bb.pill("10K", x, y, leader_to=...)` for values,
-  `bb.probe(hole, "CH1")` for scope hooks.
+  `bb.probe(hole, "CH1", color=WIRE_YELLOW)` for scope hooks; `color`
+  tints the hook and pill to the scope's channel colour (WIRE_YELLOW,
+  WIRE_MAGENTA). `led()` and `electrolytic()` mark the positive lead
+  with a "+" unless `polarity=False`.
 - **Ghosting** — `with bb.ghost():` renders a previous build stage
   pale, so incremental figures highlight what changed.
 

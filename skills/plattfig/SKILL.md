@@ -24,14 +24,15 @@ only) and it prints the SVG path it wrote.
 ## Breadboard quick start
 
 ```python
-from plattfig import Breadboard, WIRE_RED, WIRE_BLUE, WIRE_GREEN
+from plattfig import Breadboard, WIRE_RED, WIRE_BLUE, WIRE_GREEN, WIRE_YELLOW, WIRE_MAGENTA
 bb = Breadboard(cols=30)                    # half-size board; 63 = full
 bb.ic(13, "555")                            # DIP-8 straddles the trench, notch left
 bb.jumper((13, "a"), ("T+", 13), color=WIRE_RED)
 bb.route([(16, "g"), bb.xy(18.5, "g"), bb.xy(18.5, "T+"), ("T+", 19)], color=WIRE_RED)
 bb.resistor(("T+", 14), (14, "a"), "10k")   # bands computed from value
-bb.electrolytic((14, "i"), ("B-", 14))      # stripe faces the neg lead
-bb.led((15, "h"), (18, "h"))
+bb.electrolytic((14, "i"), ("B-", 14))      # stripe faces the neg lead, "+" beside the pos lead
+bb.led((15, "h"), (18, "h"))                # anode first; a "+" marks it
+bb.probe((15, "j"), "CH1", color=WIRE_YELLOW)   # hook and pill in the scope's channel colour
 bb.supply(("T+", 2), "+", label="+5 V", side="left")
 bb.pill("10K", x, y, leader_to=(x2, y2))    # px; get px from bb.hole(...)
 bb.save("figure.svg")

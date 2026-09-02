@@ -32,6 +32,7 @@ WIRE_RED = "#a83226"     # positive supply
 WIRE_BLUE = "#3d6ea8"    # ground / negative
 WIRE_YELLOW = "#d9a520"  # signal jumpers
 WIRE_GREEN = "#2e6b4f"   # signal jumpers (alt)
+WIRE_MAGENTA = "#b5338f" # signal jumpers (alt); scope CH2 on Siglent/Rigol
 WIRE_GRAY = "#8a9491"    # neutral jumper
 LEAD = "#ffffff"         # component lead wire (white, dark-outlined)
 LEAD_EDGE = "#3f4a49"    # lead outline
@@ -125,7 +126,7 @@ class _Canvas:
 
     # -- shared decorations ------------------------------------------
 
-    def pill(self, text, x, y, leader_to=None, font_size=11):
+    def pill(self, text, x, y, leader_to=None, font_size=11, stroke=None):
         """White stadium callout with ink outline, centered on (x, y)."""
         w = max(26, 7.2 * len(str(text)) + 12)
         h = font_size + 9
@@ -134,8 +135,9 @@ class _Canvas:
             parts.append('<line x1="%g" y1="%g" x2="%g" y2="%g" stroke="%s" '
                          'stroke-width="1.2"/>' % (x, y, leader_to[0], leader_to[1], INK))
         parts.append('<rect x="%g" y="%g" width="%g" height="%g" rx="%g" '
-                     'fill="#ffffff" stroke="%s" stroke-width="1.4"/>'
-                     % (x - w / 2, y - h / 2, w, h, h / 2, INK))
+                     'fill="#ffffff" stroke="%s" stroke-width="%g"/>'
+                     % (x - w / 2, y - h / 2, w, h, h / 2, stroke or INK,
+                        2.2 if stroke else 1.4))
         parts.append('<text x="%g" y="%g" font-family="%s" font-size="%g" '
                      'fill="%s" text-anchor="middle">%s</text>'
                      % (x, y + font_size * 0.34, FONT, font_size, INK, _esc(text)))
@@ -319,6 +321,20 @@ class Breadboard(_Canvas):
                    '<path d="%s" fill="none" stroke="%s" stroke-width="5.5" '
                    'stroke-linecap="round"/>' % (d, INK, d, color))
 
+    def _polarity_mark(self, p0, p1):
+        """A bold "+" beside the positive lead end p0 of a p0->p1 part,
+        offset to the left of the travel direction (above a part drawn
+        left to right, left of a part drawn top to bottom), nudged a
+        little outward along the lead so it clears the socket."""
+        import math
+        dx, dy = p1[0] - p0[0], p1[1] - p0[1]
+        L = max(math.hypot(dx, dy), 1)
+        px = p0[0] + dy / L * 11 - dx / L * 3
+        py = p0[1] - dx / L * 11 - dy / L * 3
+        return ('<text x="%g" y="%g" font-family="%s" font-size="13" '
+                'font-weight="bold" fill="%s" text-anchor="middle" '
+                'dominant-baseline="central">+</text>' % (px, py, FONT, INK))
+
     def _lead(self, p0, p1):
         """Component lead: white wire with a dark outline, Platt-style."""
         seg = 'x1="%g" y1="%g" x2="%g" y2="%g"' % (p0[0], p0[1], p1[0], p1[1])
@@ -347,14 +363,17 @@ class Breadboard(_Canvas):
         s.append('</g>')
         self._emit("".join(s))
 
-    def electrolytic(self, pos, neg, r=13):
+    def electrolytic(self, pos, neg, r=13, polarity=True):
         """Top view: dark sleeve, aluminum top with vent score, white
-        negative stripe on the sleeve toward the `neg` lead."""
+        negative stripe on the sleeve toward the `neg` lead. With
+        polarity=True a "+" sits beside the positive lead as well."""
         p0, p1 = self.hole(*pos), self.hole(*neg)
         cx, cy = (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2
         import math
         ang = math.degrees(math.atan2(p1[1] - p0[1], p1[0] - p0[0]))
         s = [self._lead(p0, p1)]
+        if polarity:
+            s.append(self._polarity_mark(p0, p1))
         s.append('<g transform="translate(%g,%g) rotate(%g)">' % (cx, cy, ang))
         s.append('<circle r="%g" fill="#38464a" stroke="%s" stroke-width="1.3"/>' % (r, INK))
         # negative stripe: sleeve wedge on the +x side (toward `neg`)
@@ -371,10 +390,15 @@ class Breadboard(_Canvas):
         s.append('</g>')
         self._emit("".join(s))
 
-    def led(self, anode, cathode, color="#cc2b1f", r=11):
+    def led(self, anode, cathode, color="#cc2b1f", r=11, polarity=True):
+        """Top view. With polarity=True a small "+" sits beside the anode
+        lead, on the side away from the body, so the longer leg is
+        unambiguous at a glance."""
         p0, p1 = self.hole(*anode), self.hole(*cathode)
         cx, cy = (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2
         s = [self._lead(p0, p1)]
+        if polarity:
+            s.append(self._polarity_mark(p0, p1))
         s.append('<circle cx="%g" cy="%g" r="%g" fill="%s" stroke="%s" '
                  'stroke-width="1.6"/>' % (cx, cy, r, color, INK))
         s.append('<circle cx="%g" cy="%g" r="%g" fill="#e8695c"/>'
@@ -437,14 +461,20 @@ class Breadboard(_Canvas):
         if label:
             self.text(label, ex, hy - 16, size=13, anchor="middle", bold=True)
 
-    def probe(self, hole, label, dx=0, dy=30):
-        """Scope-probe hook: small hook glyph on the hole plus a pill."""
+    def probe(self, hole, label, dx=0, dy=30, color=None):
+        """Scope-probe hook: small hook glyph on the hole plus a pill.
+        `color` tints the hook and the pill outline to match the scope's
+        channel color (Siglent/Rigol: CH1 yellow, CH2 magenta)."""
         hx, hy = self.hole(*hole)
-        s = ['<circle cx="%g" cy="%g" r="5.5" fill="none" stroke="%s" '
-             'stroke-width="2.6"/>' % (hx, hy, INK)]
+        c = color or INK
+        s = ['<circle cx="%g" cy="%g" r="6" fill="none" stroke="%s" '
+             'stroke-width="4.6"/>' % (hx, hy, INK),
+             '<circle cx="%g" cy="%g" r="6" fill="none" stroke="%s" '
+             'stroke-width="2.6"/>' % (hx, hy, c)]
         self._emit("".join(s), "over")
         self.pill(label, hx + dx, hy + dy,
-                  leader_to=(hx, hy + 6) if (dx or dy > 24) else None)
+                  leader_to=(hx, hy + 6) if (dx or dy > 24) else None,
+                  stroke=color)
 
     # -- output ------------------------------------------------------
 
@@ -688,10 +718,11 @@ class Schematic(_Canvas):
                    'stroke="%s" stroke-width="0.6" stroke-linejoin="miter"/>'
                    % (d, c, width, head, c, c), "over")
 
-    def pill(self, text, x, y, leader_to=None, font_size=11):
+    def pill(self, text, x, y, leader_to=None, font_size=11, stroke=None):
         """Grid-unit wrapper over the shared pill."""
         lt = (leader_to[0] * self.G, leader_to[1] * self.G) if leader_to else None
-        super().pill(text, x * self.G, y * self.G, leader_to=lt, font_size=font_size)
+        super().pill(text, x * self.G, y * self.G, leader_to=lt,
+                     font_size=font_size, stroke=stroke)
 
     def text(self, s, x, y, size=12, anchor="middle", bold=False, color=INK):
         super().text(s, x * self.G, y * self.G, size=size, anchor=anchor,

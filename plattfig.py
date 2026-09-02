@@ -617,6 +617,74 @@ class Schematic(_Canvas):
         self._emit("".join(s))
         return pins
 
+    def pinout(self, x, y, label, left, right, pitch=4, width=12):
+        """Top-view DIP pinout, notch at the top edge, pin 1 at top-left of the notch.
+        `left` lists (number, name) pairs top to bottom for the left side,
+        `right` lists them bottom to top for the right side, so both read
+        in pin order. Names are ink text beside the stubs; a name of
+        "VCC" is set with a subscript. Returns {number: (gx, gy)} of stub
+        tips in grid units."""
+        px, py = self._xy(x, y)
+        n = len(left)
+        W = width * self.G
+        H = (n - 1) * pitch * self.G + 2.2 * self.G
+        s = ['<rect x="%g" y="%g" width="%g" height="%g" rx="4" fill="%s" '
+             'stroke="%s" stroke-width="1.6"/>' % (px, py, W, H, IC_BODY_SCH, INK)]
+        # locating notch, top centre
+        s.append('<path d="M %g %g A 8 8 0 0 0 %g %g Z" fill="#ffffff" '
+                 'stroke="%s" stroke-width="1.2"/>'
+                 % (px + W / 2 - 8, py, px + W / 2 + 8, py, INK))
+        pins = {}
+
+        def name_text(name, tx, anchor):
+            if name.upper() == "VCC":
+                return ('<text x="%g" y="%g" font-family="%s" font-size="13" fill="%s" '
+                        'text-anchor="%s" font-weight="bold">V<tspan font-size="9" dy="3">CC'
+                        '</tspan></text>' % (tx, cy + 4.5, FONT, INK, anchor))
+            return ('<text x="%g" y="%g" font-family="%s" font-size="13" fill="%s" '
+                    'text-anchor="%s" font-weight="bold">%s</text>'
+                    % (tx, cy + 4.5, FONT, INK, anchor, _esc(name)))
+
+        for i, (num, name) in enumerate(left):
+            cy = py + 1.1 * self.G + i * pitch * self.G
+            s.append('<line x1="%g" y1="%g" x2="%g" y2="%g" stroke="%s" stroke-width="2.2"/>'
+                     % (px, cy, px - self.G, cy, INK))
+            s.append('<text x="%g" y="%g" font-family="%s" font-size="12" fill="#ffffff" '
+                     'text-anchor="start" font-weight="bold">%s</text>'
+                     % (px + 7, cy + 4.5, FONT, _esc(num)))
+            s.append(name_text(name, px - self.G - 6, "end"))
+            pins[str(num)] = (x - 1, cy / self.G)
+        for i, (num, name) in enumerate(right):
+            cy = py + 1.1 * self.G + (n - 1 - i) * pitch * self.G
+            s.append('<line x1="%g" y1="%g" x2="%g" y2="%g" stroke="%s" stroke-width="2.2"/>'
+                     % (px + W, cy, px + W + self.G, cy, INK))
+            s.append('<text x="%g" y="%g" font-family="%s" font-size="12" fill="#ffffff" '
+                     'text-anchor="end" font-weight="bold">%s</text>'
+                     % (px + W - 7, cy + 4.5, FONT, _esc(num)))
+            s.append(name_text(name, px + W + self.G + 6, "start"))
+            pins[str(num)] = (x + width + 1, cy / self.G)
+        s.append('<text x="%g" y="%g" font-family="%s" font-size="14" fill="#ffffff" '
+                 'text-anchor="middle" letter-spacing="2">%s</text>'
+                 % (px + W / 2, py + H / 2 + 5, FONT, _esc(label)))
+        self._emit("".join(s))
+        return pins
+
+    def arrow(self, points, role="sig", width=1.6):
+        """Thin polyline ending in a filled arrowhead, for annotations."""
+        import math
+        pts = [self._xy(*p) for p in points]
+        c = self.ROLE[role]
+        d = "M " + " L ".join("%g %g" % p for p in pts)
+        (x0, y0), (x1, y1) = pts[-2], pts[-1]
+        ang = math.atan2(y1 - y0, x1 - x0)
+        L, hw = 7.5, 3.5
+        bx, by = x1 - L * math.cos(ang), y1 - L * math.sin(ang)
+        nx, ny = -math.sin(ang), math.cos(ang)
+        head = "%g,%g %g,%g %g,%g" % (x1, y1, bx + hw * nx, by + hw * ny, bx - hw * nx, by - hw * ny)
+        self._emit('<path d="%s" fill="none" stroke="%s" stroke-width="%g" '
+                   'stroke-linejoin="round"/><polygon points="%s" fill="%s"/>'
+                   % (d, c, width, head, c), "over")
+
     def pill(self, text, x, y, leader_to=None, font_size=11):
         """Grid-unit wrapper over the shared pill."""
         lt = (leader_to[0] * self.G, leader_to[1] * self.G) if leader_to else None

@@ -75,6 +75,11 @@ role)` with `'pos'`/`'neg'`/`'sig'` roles, `sc.dot()` junctions,
 resistors, caps, LED, ground, supply, pills, and a components table.
 See [examples/astable_schematic.py](examples/astable_schematic.py).
 
+`sc.pinout(x, y, "555", left=[(1, "GND"), ...], right=[(5, "CONTROL"), ...])`
+draws a top-view pinout with the notch at the top edge and the names beside
+the stubs; `left` reads top to bottom and `right` bottom to top, so both
+lists run in pin order. `sc.arrow(points)` is a thin annotation arrow.
+
 Check your work by rasterizing and looking:
 
 ```bash

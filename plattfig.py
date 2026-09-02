@@ -332,7 +332,7 @@ class Breadboard(_Canvas):
         px = p0[0] + dy / L * 12 - dx / L * 3
         py = p0[1] - dx / L * 12 - dy / L * 3
         d = "M %g %g H %g M %g %g V %g" % (px - size, py, px + size, px, py - size, py + size)
-        return ('<path d="%s" stroke="%s" stroke-width="4.6" stroke-linecap="round" fill="none"/>'
+        return ('<path d="%s" stroke="%s" stroke-width="6.2" stroke-linecap="round" fill="none"/>'
                 '<path d="%s" stroke="%s" stroke-width="2.4" stroke-linecap="round" fill="none"/>'
                 % (d, LEAD, d, LEAD_EDGE))
 

@@ -323,7 +323,7 @@ class Breadboard(_Canvas):
 
     def _polarity_mark(self, p0, p1, size=5):
         """A "+" beside the positive lead end p0 of a p0->p1 part, drawn
-        in the lead style (white with a dark outline) so it reads as
+        in the inverse lead style (dark with a white outline) so it reads as
         part of the component. Offset to the left of the travel
         direction and nudged a little outward so it clears the socket."""
         import math
@@ -334,7 +334,7 @@ class Breadboard(_Canvas):
         d = "M %g %g H %g M %g %g V %g" % (px - size, py, px + size, px, py - size, py + size)
         return ('<path d="%s" stroke="%s" stroke-width="4.6" stroke-linecap="round" fill="none"/>'
                 '<path d="%s" stroke="%s" stroke-width="2.4" stroke-linecap="round" fill="none"/>'
-                % (d, LEAD_EDGE, d, LEAD))
+                % (d, LEAD, d, LEAD_EDGE))
 
     def _lead(self, p0, p1):
         """Component lead: white wire with a dark outline, Platt-style."""

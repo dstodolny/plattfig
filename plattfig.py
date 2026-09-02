@@ -321,20 +321,23 @@ class Breadboard(_Canvas):
                    '<path d="%s" fill="none" stroke="%s" stroke-width="5.5" '
                    'stroke-linecap="round"/>' % (d, INK, d, color))
 
-    def _polarity_mark(self, p0, p1, size=5):
-        """A "+" beside the positive lead end p0 of a p0->p1 part, drawn
-        in the inverse lead style (dark with a white outline) so it reads as
-        part of the component. Offset to the left of the travel
-        direction and nudged a little outward so it clears the socket."""
+    def _polarity_mark(self, p0, p1, sign="+", size=5, side=1):
+        """Polarity mark beside the lead end p0 of a p0->p1 part, Platt
+        style: a red "+" or a blue "-", ringed by a thin white line and
+        a dark outline. Offset to the left of the travel direction and
+        nudged a little outward so it clears the socket."""
         import math
         dx, dy = p1[0] - p0[0], p1[1] - p0[1]
         L = max(math.hypot(dx, dy), 1)
-        px = p0[0] + dy / L * 12 - dx / L * 3
-        py = p0[1] - dx / L * 12 - dy / L * 3
-        d = "M %g %g H %g M %g %g V %g" % (px - size, py, px + size, px, py - size, py + size)
-        return ('<path d="%s" stroke="%s" stroke-width="6.2" stroke-linecap="round" fill="none"/>'
-                '<path d="%s" stroke="%s" stroke-width="2.4" stroke-linecap="round" fill="none"/>'
-                % (d, LEAD, d, LEAD_EDGE))
+        px = p0[0] + side * dy / L * 12 - dx / L * 3
+        py = p0[1] - side * dx / L * 12 - dy / L * 3
+        d = "M %g %g H %g" % (px - size, py, px + size)
+        if sign == "+":
+            d += " M %g %g V %g" % (px, py - size, py + size)
+        color = WIRE_RED if sign == "+" else WIRE_BLUE
+        return "".join(
+            '<path d="%s" stroke="%s" stroke-width="%g" stroke-linecap="round" fill="none"/>'
+            % (d, c, w) for c, w in ((LEAD_EDGE, 7.4), (LEAD, 5.0), (color, 2.6)))
 
     def _lead(self, p0, p1):
         """Component lead: white wire with a dark outline, Platt-style."""
@@ -367,14 +370,16 @@ class Breadboard(_Canvas):
     def electrolytic(self, pos, neg, r=13, polarity=True):
         """Top view: dark sleeve, aluminum top with vent score, white
         negative stripe on the sleeve toward the `neg` lead. With
-        polarity=True a "+" sits beside the positive lead as well."""
+        polarity=True a red "+" sits beside the positive lead and a blue
+        "-" beside the negative one."""
         p0, p1 = self.hole(*pos), self.hole(*neg)
         cx, cy = (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2
         import math
         ang = math.degrees(math.atan2(p1[1] - p0[1], p1[0] - p0[0]))
         s = [self._lead(p0, p1)]
         if polarity:
-            s.append(self._polarity_mark(p0, p1))
+            s.append(self._polarity_mark(p0, p1, "+"))
+            s.append(self._polarity_mark(p1, p0, "-", side=-1))
         s.append('<g transform="translate(%g,%g) rotate(%g)">' % (cx, cy, ang))
         s.append('<circle r="%g" fill="#38464a" stroke="%s" stroke-width="1.3"/>' % (r, INK))
         # negative stripe: sleeve wedge on the +x side (toward `neg`)
@@ -392,7 +397,7 @@ class Breadboard(_Canvas):
         self._emit("".join(s))
 
     def led(self, anode, cathode, color="#cc2b1f", r=11, polarity=True):
-        """Top view. With polarity=True a small "+" sits beside the anode
+        """Top view. With polarity=True a red "+" sits beside the anode
         lead, on the side away from the body, so the longer leg is
         unambiguous at a glance."""
         p0, p1 = self.hole(*anode), self.hole(*cathode)

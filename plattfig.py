@@ -459,9 +459,11 @@ class Breadboard(_Canvas):
                  'stroke-linecap="round" fill="none"/>' % (d, color))
         s.append('<circle cx="%g" cy="%g" r="8" fill="%s" stroke="%s" '
                  'stroke-width="1.4"/>' % (ex, hy, color, INK))
+        s.append('<path d="M %g %g h 8" stroke="#ffffff" stroke-width="2"/>'
+                 % (ex - 4, hy))
         if kind == "+":
-            s.append('<path d="M %g %g h 8 M %g %g v 8" stroke="#ffffff" '
-                     'stroke-width="2"/>' % (ex - 4, hy, ex, hy - 4))
+            s.append('<path d="M %g %g v 8" stroke="#ffffff" stroke-width="2"/>'
+                     % (ex, hy - 4))
         self._emit("".join(s))
         if label:
             self.text(label, ex, hy - 16, size=13, anchor="middle", bold=True)

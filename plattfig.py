@@ -370,15 +370,14 @@ class Breadboard(_Canvas):
     def electrolytic(self, pos, neg, r=13, polarity=True):
         """Top view: dark sleeve, aluminum top with vent score, white
         negative stripe on the sleeve toward the `neg` lead. With
-        polarity=True a red "+" sits beside the positive lead and a blue
-        "-" beside the negative one."""
+        polarity=True a blue "-" sits beside the negative lead as well, the
+        way Platt marks electrolytics."""
         p0, p1 = self.hole(*pos), self.hole(*neg)
         cx, cy = (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2
         import math
         ang = math.degrees(math.atan2(p1[1] - p0[1], p1[0] - p0[0]))
         s = [self._lead(p0, p1)]
         if polarity:
-            s.append(self._polarity_mark(p0, p1, "+"))
             s.append(self._polarity_mark(p1, p0, "-", side=-1))
         s.append('<g transform="translate(%g,%g) rotate(%g)">' % (cx, cy, ang))
         s.append('<circle r="%g" fill="#38464a" stroke="%s" stroke-width="1.3"/>' % (r, INK))

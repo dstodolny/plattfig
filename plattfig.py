@@ -321,19 +321,20 @@ class Breadboard(_Canvas):
                    '<path d="%s" fill="none" stroke="%s" stroke-width="5.5" '
                    'stroke-linecap="round"/>' % (d, INK, d, color))
 
-    def _polarity_mark(self, p0, p1):
-        """A bold "+" beside the positive lead end p0 of a p0->p1 part,
-        offset to the left of the travel direction (above a part drawn
-        left to right, left of a part drawn top to bottom), nudged a
-        little outward along the lead so it clears the socket."""
+    def _polarity_mark(self, p0, p1, size=5):
+        """A "+" beside the positive lead end p0 of a p0->p1 part, drawn
+        in the lead style (white with a dark outline) so it reads as
+        part of the component. Offset to the left of the travel
+        direction and nudged a little outward so it clears the socket."""
         import math
         dx, dy = p1[0] - p0[0], p1[1] - p0[1]
         L = max(math.hypot(dx, dy), 1)
-        px = p0[0] + dy / L * 11 - dx / L * 3
-        py = p0[1] - dx / L * 11 - dy / L * 3
-        return ('<text x="%g" y="%g" font-family="%s" font-size="13" '
-                'font-weight="bold" fill="%s" text-anchor="middle" '
-                'dominant-baseline="central">+</text>' % (px, py, FONT, INK))
+        px = p0[0] + dy / L * 12 - dx / L * 3
+        py = p0[1] - dx / L * 12 - dy / L * 3
+        d = "M %g %g H %g M %g %g V %g" % (px - size, py, px + size, px, py - size, py + size)
+        return ('<path d="%s" stroke="%s" stroke-width="4.6" stroke-linecap="round" fill="none"/>'
+                '<path d="%s" stroke="%s" stroke-width="2.4" stroke-linecap="round" fill="none"/>'
+                % (d, LEAD_EDGE, d, LEAD))
 
     def _lead(self, p0, p1):
         """Component lead: white wire with a dark outline, Platt-style."""

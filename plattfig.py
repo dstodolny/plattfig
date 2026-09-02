@@ -674,16 +674,19 @@ class Schematic(_Canvas):
         import math
         pts = [self._xy(*p) for p in points]
         c = self.ROLE[role]
-        d = "M " + " L ".join("%g %g" % p for p in pts)
         (x0, y0), (x1, y1) = pts[-2], pts[-1]
         ang = math.atan2(y1 - y0, x1 - x0)
-        L, hw = 7.5, 3.5
+        L, hw = 10, 3.6
         bx, by = x1 - L * math.cos(ang), y1 - L * math.sin(ang)
         nx, ny = -math.sin(ang), math.cos(ang)
+        # the shaft stops at the base of the head so the point stays sharp
+        shaft = pts[:-1] + [(bx, by)]
+        d = "M " + " L ".join("%g %g" % p for p in shaft)
         head = "%g,%g %g,%g %g,%g" % (x1, y1, bx + hw * nx, by + hw * ny, bx - hw * nx, by - hw * ny)
         self._emit('<path d="%s" fill="none" stroke="%s" stroke-width="%g" '
-                   'stroke-linejoin="round"/><polygon points="%s" fill="%s"/>'
-                   % (d, c, width, head, c), "over")
+                   'stroke-linejoin="round"/><polygon points="%s" fill="%s" '
+                   'stroke="%s" stroke-width="0.6" stroke-linejoin="miter"/>'
+                   % (d, c, width, head, c, c), "over")
 
     def pill(self, text, x, y, leader_to=None, font_size=11):
         """Grid-unit wrapper over the shared pill."""
